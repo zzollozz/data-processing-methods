@@ -10,6 +10,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+from selenium.webdriver.support.ui import WebDriverWait # создание объекта задержки
+from selenium.webdriver.support import expected_conditions as EC # ожидаемые события ( условия)
+from selenium.common import exceptions as se
+
 
 url = 'https://www.mvideo.ru/'
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36'}
@@ -22,13 +26,15 @@ driver.get(url)
 
 root = driver.find_element(By.TAG_NAME, 'html')
 
-for i in range(3):
-    root.send_keys(Keys.PAGE_DOWN)  # Пролистали страницу 3 раза
-    time.sleep(1)
+while True: # Ищем кнопку "в тренде" перелистывая страницы
+    try:
+        wait = WebDriverWait(driver, 5)
+        button = wait.until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'В тренде')]")))
+        button.click()
+        break
+    except se.TimeoutException:
+        root.send_keys(Keys.PAGE_DOWN)
 
-time.sleep(3)
-button = driver.find_element(By.XPATH, "//span[contains(text(),'В тренде')]") # Выбор кнопки В ТРЕНДЕ
-button.click()
 
 list_tov = driver.find_elements(By.XPATH, "//mvid-product-cards-group[@_ngcontent-serverapp-c254]//a")
 
@@ -37,17 +43,17 @@ link_cards = [i.get_attribute("href") for i in list_tov]
 # pprint(link_cards)
 list_card_goods = []
 
-
 for el in range(0, len(link_cards), 3):
     list_card = {}
     link_card = link_cards[el]
     driver.get(link_card)
-    time.sleep(3)
-    name = driver.find_element(By.XPATH, "//h1[@class='title']").text
-    price = driver.find_element(By.XPATH, "//mvid-price[@_ngcontent-serverapp-c321]//span[1]").text
 
-    list_card['Имя товара:'] = name
-    list_card['Цена товара:'] = price
+    wait = WebDriverWait(driver, 10)
+    name = wait.until(EC.presence_of_element_located(((By.XPATH, "//h1[@class='title']"))))
+    price = wait.until(EC.presence_of_element_located(((By.XPATH, "//mvid-price[@_ngcontent-serverapp-c321]//span[1]"))))
+
+    list_card['Имя товара:'] = name.text
+    list_card['Цена товара:'] = price.text
     list_card['Ссылка на товар:'] = link_card
 
     list_card_goods.append(list_card)
